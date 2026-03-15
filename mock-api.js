@@ -58,7 +58,15 @@ const DISCOUNTS = [
 ];
 
 const MOCK_TOKEN = 'mock_access_token_store_owner';
+const MOCK_CASHIER_TOKEN = 'mock_access_token_cashier';
+const MOCK_DRIVER_TOKEN = 'mock_access_token_driver';
 const MOCK_CUSTOMER_TOKEN = 'mock_access_token_customer';
+
+const STORE_USERS = [
+  { email:'owner@metrowholesale.co.ke',  password:'store1234', id:'owner1',   role:'STORE_OWNER', name:'Metro Owner',    token: MOCK_TOKEN },
+  { email:'cashier@metrowholesale.co.ke', password:'cash1234',  id:'cashier1', role:'CASHIER',      name:'Jane Cashier',   token: MOCK_CASHIER_TOKEN },
+  { email:'driver@metrowholesale.co.ke',  password:'drive1234', id:'driver1',  role:'DRIVER',       name:'Tom Driver',     token: MOCK_DRIVER_TOKEN },
+];
 
 function json(res, data, status) {
   status = status || 200;
@@ -73,8 +81,9 @@ function json(res, data, status) {
 
 const routes = {
   'POST /api/auth/store/login': function(req, res, body) {
-    if (body.email === 'owner@metrowholesale.co.ke' && body.password === 'store1234') {
-      json(res, { success:true, data:{ user:{id:'owner1',role:'STORE_OWNER',email:body.email}, accessToken:MOCK_TOKEN, refreshToken:'refresh_mock' }});
+    var u = STORE_USERS.find(function(x){ return x.email===body.email && x.password===body.password; });
+    if (u) {
+      json(res, { success:true, data:{ user:{id:u.id,role:u.role,email:u.email,name:u.name}, accessToken:u.token, refreshToken:'refresh_mock' }});
     } else {
       json(res, { success:false, message:'Invalid credentials' }, 401);
     }
@@ -115,6 +124,71 @@ const routes = {
   'POST /api/store/discounts': function(req, res, body) { var d={id:'d_new',...body,usageCount:0,isActive:true}; DISCOUNTS.push(d); json(res, { success:true, data:d }); },
   'PUT /api/store/loyalty/config': function(req, res, body) { json(res, { success:true, data:body }); },
   'GET /api/store/loyalty/config': function(req, res) { json(res, { success:true, data:{ loyaltyEarnRate:1, loyaltyRedeemValue:0.01 }}); },
+
+  'GET /api/store/analytics': function(req, res) {
+    json(res, { success:true, data:{
+      summary:{ totalRevenue:284600, totalOrders:47, totalCustomers:18, avgOrderValue:6055 },
+      revenueByDay:[
+        {date:'Mar 9', revenue:18400},  {date:'Mar 10',revenue:22100}, {date:'Mar 11',revenue:15800},
+        {date:'Mar 12',revenue:31200},  {date:'Mar 13',revenue:27600}, {date:'Mar 14',revenue:19900},
+        {date:'Mar 15',revenue:24800}
+      ],
+      topProducts:[
+        {name:'Cooking Oil 5L',  units:84, revenue:77280},
+        {name:'Unga Pembe 2kg',  units:210,revenue:34650},
+        {name:'Sugar 1kg',       units:180,revenue:27000},
+        {name:'Soda Water 6pk',  units:66, revenue:26334},
+        {name:'Omo 1kg',         units:72, revenue:24480}
+      ],
+      ordersByStatus:[
+        {status:'DELIVERED',count:28},{status:'PENDING',count:9},
+        {status:'MODIFIED',count:6}, {status:'DISPATCHED',count:4}
+      ],
+      topCustomers:[
+        {name:'John Kamau',   orders:8,  spent:52400},
+        {name:'Mary Wanjiru', orders:6,  spent:38900},
+        {name:'Peter Omondi', orders:5,  spent:31200}
+      ]
+    }});
+  },
+
+  'GET /api/store/finance': function(req, res) {
+    json(res, { success:true, data:{
+      summary:{ totalCollected:198400, pendingPayment:62800, overdue:23400, thisMonth:284600 },
+      paymentMethods:[
+        {method:'M-Pesa', amount:142000, count:31},
+        {method:'Cash',   amount:56400,  count:16}
+      ],
+      recentTransactions:[
+        {id:'t1',orderNumber:'MW-00001',customer:'John Kamau',   amount:2340,  method:'M-Pesa',status:'PAID',    date:new Date(Date.now()-86400000*2).toISOString()},
+        {id:'t2',orderNumber:'MW-00002',customer:'Mary Wanjiru', amount:1580,  method:'Cash',  status:'PENDING', date:new Date(Date.now()-3600000).toISOString()},
+        {id:'t3',orderNumber:'MW-00003',customer:'Peter Omondi', amount:940,   method:'M-Pesa',status:'PAID',    date:new Date(Date.now()-7200000).toISOString()},
+        {id:'t4',orderNumber:'MW-00045',customer:'Alice Njeri',  amount:4200,  method:'M-Pesa',status:'PAID',    date:new Date(Date.now()-86400000).toISOString()},
+        {id:'t5',orderNumber:'MW-00046',customer:'Brian Mwangi', amount:8750,  method:'Cash',  status:'OVERDUE', date:new Date(Date.now()-86400000*5).toISOString()},
+        {id:'t6',orderNumber:'MW-00047',customer:'Carol Achieng',amount:3120,  method:'M-Pesa',status:'PENDING', date:new Date(Date.now()-1800000).toISOString()}
+      ]
+    }});
+  },
+
+  'GET /api/store/reconciliation': function(req, res) {
+    json(res, { success:true, data:{
+      summary:{ deliveredToday:4, paidToday:3, collectedCash:12400, collectedMpesa:28600, outstanding:8750 },
+      dailyRecords:[
+        {date:'Mar 15',delivered:4, paid:3, cashAmount:6200,  mpesaAmount:14300, outstanding:8750},
+        {date:'Mar 14',delivered:6, paid:6, cashAmount:9800,  mpesaAmount:22400, outstanding:0},
+        {date:'Mar 13',delivered:5, paid:4, cashAmount:7600,  mpesaAmount:18200, outstanding:4200},
+        {date:'Mar 12',delivered:8, paid:8, cashAmount:14200, mpesaAmount:31600, outstanding:0},
+        {date:'Mar 11',delivered:3, paid:3, cashAmount:4800,  mpesaAmount:11200, outstanding:0},
+        {date:'Mar 10',delivered:7, paid:6, cashAmount:11400, mpesaAmount:24800, outstanding:5600},
+        {date:'Mar 9', delivered:5, paid:5, cashAmount:8200,  mpesaAmount:18400, outstanding:0}
+      ],
+      outstandingBalances:[
+        {customer:'Brian Mwangi', phone:'+254744000005', orders:1, amount:8750,  lastOrder:'MW-00046', daysPending:5},
+        {customer:'Carol Achieng',phone:'+254755000006', orders:2, amount:4200,  lastOrder:'MW-00047', daysPending:1},
+        {customer:'David Ouma',   phone:'+254766000007', orders:1, amount:3120,  lastOrder:'MW-00040', daysPending:3}
+      ]
+    }});
+  },
 };
 
 function matchDynamic(method, path) {
