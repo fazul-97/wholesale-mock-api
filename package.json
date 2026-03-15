@@ -1,0 +1,12 @@
+{
+  "name": "metro-wholesale-mock-api",
+  "version": "1.0.0",
+  "description": "Mock API server for Metro Wholesale demo",
+  "main": "mock-api.js",
+  "scripts": {
+    "start": "node mock-api.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
