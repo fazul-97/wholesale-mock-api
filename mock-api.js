@@ -170,6 +170,21 @@ const routes = {
     }});
   },
 
+  'GET /api/store/team': function(req, res) {
+    json(res, { success:true, data:[
+      { id:'tm1', name:'Grace Wanjiku',  phone:'+254722000010', email:'owner@metrowholesale.co.ke', role:'STORE_OWNER', isActive:true,  joinedAt:'2024-01-15', lastActive:'Today' },
+      { id:'tm2', name:'James Kariuki',  phone:'+254733000011', email:'james@metro.co.ke',           role:'CASHIER',     isActive:true,  joinedAt:'2024-03-01', lastActive:'Today' },
+      { id:'tm3', name:'Brian Otieno',   phone:'+254744000012', email:null,                          role:'DRIVER',      isActive:true,  joinedAt:'2024-03-10', lastActive:'Yesterday' },
+      { id:'tm4', name:'Alice Muthoni',  phone:'+254755000013', email:null,                          role:'CASHIER',     isActive:false, joinedAt:'2024-02-20', lastActive:'Mar 10' },
+      { id:'tm5', name:'Peter Kamunde',  phone:'+254766000014', email:null,                          role:'DRIVER',      isActive:true,  joinedAt:'2024-04-05', lastActive:'Today' }
+    ]});
+  },
+
+  'POST /api/store/team': function(req, res, body) {
+    var member = { id:'tm_' + Date.now(), name:body.name, phone:body.phone, email:body.email||null, role:body.role||'CASHIER', isActive:true, joinedAt:new Date().toISOString().split('T')[0], lastActive:'Just now' };
+    json(res, { success:true, data:member });
+  },
+
   'GET /api/store/reconciliation': function(req, res) {
     json(res, { success:true, data:{
       summary:{ deliveredToday:4, paidToday:3, collectedCash:12400, collectedMpesa:28600, outstanding:8750 },
@@ -236,6 +251,10 @@ function matchDynamic(method, path) {
       json(res, { success:true, data:p });
     };
   }
+
+  m = path.match(/^\/api\/store\/team\/([^/]+)$/);
+  if (m && method === 'PATCH') return function(req, res, body) { json(res, { success:true, data:{ id:m[1], ...body }}); };
+  if (m && method === 'DELETE') return function(req, res) { json(res, { success:true }); };
 
   m = path.match(/^\/api\/store\/discounts\/([^/]+)$/);
   if (m && method === 'PATCH') return function(req, res, body) { json(res, { success:true, data:body }); };
